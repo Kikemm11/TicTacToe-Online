@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic-Tac-Toe</title>
+    <style>
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(3, 100px);
+            grid-template-rows: repeat(3, 100px);
+            gap: 5px;
+        }
+        .cell {
+            width: 100px;
+            height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2em;
+            background-color: #ddd;
+            cursor: pointer;
+        }
+        .cell.disabled {
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Tic-Tac-Toe!</h1>
+    </div>
+    <div>
+        <button id="new-table-button">New Table</button>
+    </div>
+    <div>
+        <h2>Available Tables:</h2>
+    </div>
+    <div class="available-tables">
+    </div>
+
+    <div id="game-container" style="display: none;">
+        <h2>Game in Progress</h2>
+        <div class="game-board" id="game-board">
+        </div>
+    </div>
+
+    <script>
+
+        // Stablish the connection to the server websocket
+        const socket = new WebSocket('ws://localhost:8765');
+
+        
+        // Create a new table by sending a request to the server
+        document.getElementById('new-table-button').onclick = () => {
+            socket.send('NEW_TABLE');
+        };
+
+
+        // Handle message recieved by the server
+        socket.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+
+            // If server sends available tables
+            if (data.tables) {
+                const tableContainer = document.querySelector('.available-tables');
+                tableContainer.innerHTML = '';  // Clear the current content
+
+                data.tables.forEach(table => {
+                    const tableItem = document.createElement('div');
+                    if (table.available) {
+                        tableItem.innerHTML = `<button onclick="joinTable(${table.id})">Join Table ${table.id}</button>`;
+                    } else {
+                        tableItem.innerHTML = `<p>Table ${table.id} (In Progress)</p>`;
+                    }
+                    tableContainer.appendChild(tableItem);
+                });
+            }
+
+            // Display the board only if there is an active game
+            if (data.board) {
+                document.getElementById('game-container').style.display = 'block';      // Show the game board
+                renderBoard(data.board, data.table_id);                                 // Render the updated game board
+                
+            }
+
+        };
+
+
+        // Send a request to join a specific table
+        function joinTable(tableId) {
+            socket.send(`JOIN_TABLE ${tableId}`);
+        }
+
+        // Function to render the game board dynamically
+        function renderBoard(board, table_id) {
+            const boardContainer = document.getElementById('game-board');
+            boardContainer.innerHTML = '';                                      // Clear the existing board
+
+            board.forEach((cell, index) => {
+                const cellDiv = document.createElement('div');
+                cellDiv.id = `cell-${index}`;
+                cellDiv.classList.add('cell');
+                if (cell !== ' ') {
+                    cellDiv.classList.add('disabled');                          // Disable cells that already have a move
+                }
+                cellDiv.textContent = cell;                                     // Set the content of the cell (X, O, or blank)
+                cellDiv.onclick = () => makeMove(index, table_id);              // Add click event for making a move
+                boardContainer.appendChild(cellDiv);  // Append the cell to the board
+            });
+        }
+
+        // Send the player's move to the server
+        function makeMove(index, table_id) {
+            console.log(index)
+            socket.send(`MAKE_MOVE,${table_id},${index}`);
+        }
+    </script>
+</body>
+</html>
