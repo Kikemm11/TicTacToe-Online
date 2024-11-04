@@ -174,12 +174,7 @@
                     </ul>
                 </li>
 
-                <li><strong>Ganar:</strong> Un jugador gana si logra alinear tres de sus marcas en una fila, ya sea:
-                    <ul>
-                        <li>Horizontal (tres en una fila)</li>
-                        <li>Vertical (tres en una columna)</li>
-                        <li>Diagonal (de una esquina a la otra)</li>
-                    </ul>
+                <li><strong>Jugadores:</strong> Cada mesa estara disponible para dos jugadores y se iniciara el juego cuando esta este llena
                 </li>
 
                 <li><strong>Ganar:</strong> Un jugador gana si logra alinear tres de sus marcas en una fila, ya sea:
@@ -198,7 +193,7 @@
             <div id="turn-indicator"></div>
             <button id="new-table-button">New Table</button>
             <h2 id="available-tables-header">Mesas Disponibles:</h2> 
-            <div class="available-tables"></div>
+            <div id="available-tables" class="available-tables"></div>
 
             <div id="game-container" style="display: none;">
                 <h2 id="game-status">Juego en Progreso</h2>
@@ -254,10 +249,6 @@
             if (data.board) {
                 document.getElementById('game-container').style.display = 'block'; // Mostrar el tablero
                 document.getElementById('game-status').textContent = `Jugando en la mesa ${data.table_id}`; // Actualizar el mensaje
-                
-                // Ocultar mesas disponibles y el botón "New Table"
-                document.getElementById('available-tables-header').style.display = 'none';
-                document.getElementById('new-table-button').style.display = 'none';
 
                 renderBoard(data.board, data.table_id); // Renderizar el tablero actualizado
             }
@@ -266,6 +257,10 @@
         // Enviar una solicitud para unirse a una mesa específica
         function joinTable(tableId) {
             socket.send(`JOIN_TABLE ${tableId}`);
+            // Ocultar mesas disponibles y el botón "New Table"
+            document.getElementById('available-tables-header').style.display = 'none';
+            document.getElementById('available-tables').style.display = 'none';
+            document.getElementById('new-table-button').style.display = 'none';
         }
 
         // Función para renderizar el tablero del juego dinámicamente

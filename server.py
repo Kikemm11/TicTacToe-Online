@@ -148,19 +148,16 @@ async def handle_websocket(websocket, path):
                     player_id = str(websocket)  
                     table.add_player(player_id, websocket)
 
-                    # Marcar otras mesas como no disponibles
-                    for t in game.tables:
-                        if t.id != table_id and t.available:
-                            t.available = False  # Hacer que las demás mesas no estén disponibles
-                            
                     for client in clients:
                         if client['client'] == websocket:
                             client['table'] = table_id
-                            # Create a new thread if two players have already entered the table
-
+                            
+                    # Create a new thread if two players have already entered the table
                     if len(table.players) == 2:
                         player1_socket = table.player_sockets[table.players[0]]
                         player2_socket = table.player_sockets[table.players[1]]
+                        
+                        table.available = False
                         
                         # Schedule async tasks
                         game_loop = asyncio.get_event_loop()
@@ -220,6 +217,7 @@ def game_thread(table, player1_socket, player2_socket, game_loop):
             await socket.send(json.dumps({
                 'board': table.game_board,
                 'table_id': table.id,
+                'display': True,
             }))
 
     async def game_logic():
