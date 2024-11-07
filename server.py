@@ -110,63 +110,61 @@ async def handle_websocket(websocket, path):
     # Add new client connections to the list of current clients
     clients.append({'client': websocket, 'table': None})
     
-
-    # Recieve and send messages within the websocket
-    
     try:
         while True:
             message = await websocket.recv()
-            
-            # Create new table request
 
+            # Crear nueva mesa
             if message == 'NEW_TABLE':
                 available_tables = [table for table in game.tables if table.available]
-                if len(available_tables) < 3:  # Validar aquí
+                if len(available_tables) < 3:  # Validar que no se creen más de 3 mesas sin progreso
                     game.create_table()
                     await update_tables()
                 else:
                     await websocket.send(json.dumps({'error': 'Cannot create more than 3 tables that are not in progress.'}))
                 
-            # Show the updated table list to all the clients
-                
+            # Mostrar lista de mesas actualizada
             elif message == 'GET_TABLES':
                 updated_tables = [{'id': table.id, 'available': table.available} for table in game.tables]
                 await websocket.send(json.dumps({'tables': updated_tables}))
                 
-            # Manage the logic when a client request to join a specific table    
-
+            # Unirse a una mesa existente
             elif message.startswith('JOIN_TABLE'):
-                
-                # Get the table_id of the requested table
-                
                 _, table_id = message.split()
                 table_id = int(table_id)
                 table = next((t for t in game.tables if t.id == table_id), None)
-        
 
                 if table and len(table.players) < 2:
-                    player_id = str(websocket)  
+                    player_id = str(websocket)
                     table.add_player(player_id, websocket)
 
+                    # Asociar este websocket con la mesa en la lista de clientes
                     for client in clients:
                         if client['client'] == websocket:
                             client['table'] = table_id
                             
-                    # Create a new thread if two players have already entered the table
+                    # Si la mesa tiene solo 1 jugador, enviar mensaje de espera
+                    if len(table.players) == 1:
+                        # Enviar mensaje de espera a este jugador
+                        await websocket.send(json.dumps({
+                            'message': 'A la espera de otro participante...',
+                            'table_id': table.id
+                        }))
+                    
+                    # Si ambos jugadores están en la mesa, se inicia el juego
                     if len(table.players) == 2:
                         player1_socket = table.player_sockets[table.players[0]]
                         player2_socket = table.player_sockets[table.players[1]]
                         
                         table.available = False
                         
-                        # Schedule async tasks
+                        # Programar el inicio del juego
                         game_loop = asyncio.get_event_loop()
                         threading.Thread(target=game_thread, args=(table, player1_socket, player2_socket, game_loop)).start()
 
-                    await update_tables()
-                    
-            # Manage new moves in all the tables
-                
+                    await update_tables()  # Actualizar la lista de mesas disponibles
+
+            # Gestionar los movimientos de los jugadores
             elif message.startswith('MAKE_MOVE'):
                 _, table_id, index = message.split(',')
                 table = next((t for t in game.tables if t.id == int(table_id)), None)
@@ -186,20 +184,18 @@ async def handle_websocket(websocket, path):
                             }
                             await client['client'].send(json.dumps(response))
 
-                    # Si hay un ganador o se ha producido un empate, reiniciar la mesa
+                    # Si hay un ganador o empate, reiniciar la mesa
                     if table.winner:
-                        # Aquí puedes manejar el reinicio de la mesa o permitir elegir otra
-                        game.remove_table(table.id) 
+                        game.remove_table(table.id)
                         await update_tables()  # Actualizar la lista de mesas disponibles
 
     except websockets.exceptions.ConnectionClosed:
         print("Connection closed")
     finally:
-        
-        # Remove clients from the list when the connection is closed
-        
+        # Eliminar cliente de la lista cuando se cierre la conexión
         client = [client for client in clients if client['client'] == websocket][0]
         clients.remove(client)
+
 
 
 
