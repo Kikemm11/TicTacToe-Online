@@ -121,7 +121,7 @@ async def handle_websocket(websocket, path):
                     game.create_table()
                     await update_tables()
                 else:
-                    await websocket.send(json.dumps({'error': 'Cannot create more than 3 tables that are not in progress.'}))
+                    await websocket.send(json.dumps({'error': 'No se pueden crear más de 3 mesas que no estén en progreso.'}))
                 
             # Mostrar lista de mesas actualizada
             elif message == 'GET_TABLES':

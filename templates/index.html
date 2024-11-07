@@ -80,7 +80,7 @@
         }
 
         .available-tables button {
-            width: 150px;
+            width: 350px;
             height: 50px;
             border: none;
             border-radius: 5px;
@@ -184,7 +184,7 @@
 
         <div class="column" id="game-column">
             <div id="turn-indicator"></div>
-            <button id="new-table-button">New Table</button>
+            <button id="new-table-button">Crear nueva mesa</button>
             <h2 id="available-tables-header">Mesas Disponibles:</h2> 
             <div id="available-tables" class="available-tables"></div>
 
@@ -195,7 +195,7 @@
         </div>
 
     </div>
-    <h2>Aquí va la frase</h2>
+    <!-- <h2>Aquí va la frase</h2> -->
 
     <script>
         // Establecer la conexión con el servidor websocket
@@ -217,8 +217,10 @@
         data.tables.forEach(table => {
             const tableItem = document.createElement('div');
             let participantCount = table.players ? table.players.length : 0; // Contar jugadores
-            if (table.available) {
-                tableItem.innerHTML = `<button onclick="joinTable(${table.id})">Unirse Mesa ${table.id} (Participantes: ${participantCount})</button>`;
+            if (table.available && participantCount === 1) {
+                tableItem.innerHTML = `<button onclick="joinTable(${table.id})">Unirse Mesa ${table.id} (Jugador esperando)</button>`;
+            }else if (table.available) {
+                tableItem.innerHTML = `<button onclick="joinTable(${table.id})">Unirse Mesa ${table.id} </button>`;
             }
             tableContainer.appendChild(tableItem);
         });
