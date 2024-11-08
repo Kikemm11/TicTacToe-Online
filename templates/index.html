@@ -80,7 +80,7 @@
         }
 
         .available-tables button {
-            width: 150px;
+            width: 350px;
             height: 50px;
             border: none;
             border-radius: 5px;
@@ -184,7 +184,7 @@
 
         <div class="column" id="game-column">
             <div id="turn-indicator"></div>
-            <button id="new-table-button">New Table</button>
+            <button id="new-table-button">Crear nueva mesa</button>
             <h2 id="available-tables-header">Mesas Disponibles:</h2> 
             <div id="available-tables" class="available-tables"></div>
 
@@ -195,7 +195,7 @@
         </div>
 
     </div>
-    <h2>Aquí va la frase</h2>
+    <!-- <h2>Aquí va la frase</h2> -->
 
     <script>
         // Establecer la conexión con el servidor websocket
@@ -208,44 +208,49 @@
 
         // Manejar mensajes recibidos del servidor
         socket.onmessage = (event) => {
-            const data = JSON.parse(event.data);
+    const data = JSON.parse(event.data);
 
-            if (data.tables) {
-                const tableContainer = document.querySelector('.available-tables');
-                tableContainer.innerHTML = '';  // Limpiar el contenido actual
+    if (data.tables) {
+        const tableContainer = document.querySelector('.available-tables');
+        tableContainer.innerHTML = '';  // Limpiar el contenido actual
 
-                data.tables.forEach(table => {
-                    const tableItem = document.createElement('div');
-                    let participantCount = table.players ? table.players.length : 0; // Contar jugadores
-                    if (table.available) {
-                        tableItem.innerHTML = `<button onclick="joinTable(${table.id})">Unirse Mesa ${table.id} (Participantes: ${participantCount})</button>`;
-                    } 
-                    // else {
-                    //     tableItem.innerHTML = `<p>Mesas ${table.id} (En Progreso)</p>`;
-                    // }
-                    tableContainer.appendChild(tableItem);
-                });
+        data.tables.forEach(table => {
+            const tableItem = document.createElement('div');
+            let participantCount = table.players ? table.players.length : 0; // Contar jugadores
+            if (table.available && participantCount === 1) {
+                tableItem.innerHTML = `<button onclick="joinTable(${table.id})">Unirse Mesa ${table.id} (Jugador esperando)</button>`;
+            }else if (table.available) {
+                tableItem.innerHTML = `<button onclick="joinTable(${table.id})">Unirse Mesa ${table.id} </button>`;
             }
+            tableContainer.appendChild(tableItem);
+        });
+    }
 
-            if (data.turn) {
-                document.getElementById('turn-indicator').textContent = `Turno de: ${data.turn}`;
-            }
+    if (data.turn) {
+        document.getElementById('turn-indicator').textContent = `Turno de: ${data.turn}`;
+    }
 
-            if (data.error) {
-                alert(data.error);  // Mostrar un mensaje de alerta con el error
-            }
+    if (data.error) {
+        alert(data.error);  // Mostrar un mensaje de alerta con el error
+    }
 
-            if (data.winner) {
-                alert(`Game Over! ${data.winner}`);  // Mostrar mensaje de ganador o empate
-            }
+    if (data.winner) {
+        alert(`Game Over! ${data.winner}`);  // Mostrar mensaje de ganador o empate
+    }
 
-            if (data.board) {
-                document.getElementById('game-container').style.display = 'block'; // Mostrar el tablero
-                document.getElementById('game-status').textContent = `Jugando en la mesa ${data.table_id}`; // Actualizar el mensaje
+    if (data.board) {
+        document.getElementById('game-container').style.display = 'block'; // Mostrar el tablero
+        document.getElementById('game-status').textContent = `Jugando en la mesa ${data.table_id}`; // Actualizar el mensaje
 
-                renderBoard(data.board, data.table_id); // Renderizar el tablero actualizado
-            }
-        };
+        renderBoard(data.board, data.table_id); // Renderizar el tablero actualizado
+    }
+
+    // Mostrar mensaje de espera si es necesario
+    if (data.message) {
+        alert(data.message);  // Muestra el mensaje de espera
+    }
+};
+
 
         // Enviar una solicitud para unirse a una mesa específica
         function joinTable(tableId) {
